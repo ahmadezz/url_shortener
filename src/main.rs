@@ -12,6 +12,7 @@ use std::net::SocketAddr;
 
 mod handler;
 mod model;
+mod data;
 
 /// Generate signal for graceful shutdown of the app
 async fn shutdown_signal() {
@@ -55,7 +56,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let base_url = env::var("BASE_URL").expect("BASE_URL is not set in environment variables");
 
     // Appstate which stores the db connection and base url to be shared in handlers
-    let state = AppState { base_url };
+    let state = AppState {
+        base_url,
+        db: db_conn,
+    };
     // create routes
     let app = Router::new()
         .route("/getShortUrl", post(get_short_url))
