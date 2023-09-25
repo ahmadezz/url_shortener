@@ -14,7 +14,7 @@ pub async fn find_id(db: &DatabaseConnection, url: &str) -> Option<String> {
         // return only the id
         Ok(Some(entry)) => Some(entry.id),
         Ok(None) => {
-            debug!("No entries found for url '{url}' in urls table");
+            debug!("Failed to find entries for url '{url}' in urls table");
             None
         }
         Err(err) => {
@@ -34,7 +34,7 @@ pub async fn find_url(db: &DatabaseConnection, id: &str) -> Option<String> {
         // return only the url
         Ok(Some(entry)) => Some(entry.url),
         Ok(None) => {
-            debug!("No entries found for id '{id}' in urls table");
+            debug!("Failed to find entries for id '{id}' in urls table");
             None
         }
         Err(err) => {
@@ -92,6 +92,6 @@ pub async fn increment_visits_count(db: &DatabaseConnection, id: &str) -> Result
             let _ = active_model_entry.update(db).await;
             Ok(())
         }
-        None => bail!("Couldn't find entry for id '{id}' in stats table to increase visits_count"),
+        None => bail!("Failed to find entry for id '{id}' in stats table to increase visits_count"),
     }
 }

@@ -14,6 +14,8 @@ axum = "0.6.20"
 axum-macros = "0.3.8"
 entity = { path = "entity" }
 migration = { path = "migration"}
+nanoid = "0.4.0"
+opentelemetry = { version = "0.20", features = ["trace", "rt-tokio"] }
 rand = "0.8.5"
 sea-orm = "0.12.3"
 serde = { version ="1.0.188", features = ["derive"]}

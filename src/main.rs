@@ -10,9 +10,9 @@ use model::AppState;
 use sea_orm::Database;
 use std::net::SocketAddr;
 
+mod data;
 mod handler;
 mod model;
-mod data;
 
 /// Generate signal for graceful shutdown of the app
 async fn shutdown_signal() {
@@ -37,6 +37,8 @@ async fn shutdown_signal() {
         _ = ctrl_c => {},
         _ = terminate => {},
     }
+    tracing::warn!("Shutdown signal received, starting graceful shutdown");
+    opentelemetry::global::shutdown_tracer_provider();
 }
 
 /// Entrypoint of the service
