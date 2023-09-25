@@ -11,3 +11,16 @@ services:
         - POSTGRES_DB=shortener
       volumes:
         - '/var/run/postgres/postgres.sock:/var/run/postgres/postgres.sock'
+
+  url_shortner_app:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgres://user:OpenSesame@postgres:5432/shortener
+      - BASE_URL=https://tier.app/
+    ports:
+      - 8080:8080
+    restart: on-failure
+    links:
+      - postgres
