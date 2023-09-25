@@ -1,0 +1,13 @@
+version: '3.8'
+services:
+  postgres:
+      image: postgres:15.1-bullseye
+      ports:
+        - 5432:5432
+      environment:
+        - POSTGRES_HOST_AUTH_METHOD=trust
+        - POSTGRES_USER=user
+        - POSTGRES_PASSWORD=OpenSesame
+        - POSTGRES_DB=shortener
+      volumes:
+        - '/var/run/postgres/postgres.sock:/var/run/postgres/postgres.sock'

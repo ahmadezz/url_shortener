@@ -5,6 +5,7 @@ use axum::{
     Router,
 };
 use handler::{get_short_url, redirect_url};
+use migration::{Migrator, MigratorTrait};
 use model::AppState;
 use sea_orm::Database;
 use std::net::SocketAddr;
@@ -43,7 +44,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // get connection to specified postgres database
     let db_url =
         env::var("DATABASE_URL").expect("DATABASE_URL is not set in environment variables");
-    let _db_conn = Database::connect(db_url).await?;
+    let db_conn = Database::connect(db_url).await?;
+
+    // apply all pending migrations on app start
+    if Migrator::up(&db_conn, None).await.is_err() {
+        panic!("Failed to apply migrations")
+    };
 
     // get base url for the app
     let base_url = env::var("BASE_URL").expect("BASE_URL is not set in environment variables");
