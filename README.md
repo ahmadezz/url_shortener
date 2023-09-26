@@ -19,6 +19,37 @@ It would take approximately 24445529.50 hours or 2790.59 years to exhaust all co
 
 The app connects to a Postgres database with a connection string of ```postgres://user:OpenSesame@localhost:5432/shortner```. The database contains two tables ```urls``` and ```stats```. ```urls``` table stores generated unique IDs and their mapped long URLs. ```stats``` stores IDs, and the visits count for that ID.
 
+## Installation Guide
+
+To run this project, you'll need to have Docker, Docker Compose, and Rust installed on your system. Follow the instructions below to install these dependencies:
+
+### 1. Docker
+
+Docker is a containerization platform that allows you to run applications in isolated environments called containers.
+
+**Install Docker:**
+
+- Linux: Follow the installation instructions for your specific Linux distribution [here](https://docs.docker.com/engine/install/).
+- Windows: Download and install Docker Desktop for Windows [here](https://docs.docker.com/desktop/install/).
+- macOS: Download and install Docker Desktop for Mac [here](https://docs.docker.com/desktop/install/).
+
+### 2. Docker Compose
+
+Docker Compose is a tool for defining and running multi-container Docker applications.
+
+**Install Docker-Compose:**
+
+Docker Compose is often included with Docker Desktop installation on Windows and macOS. For Linux and other installations, follow the instructions here.
+
+-- [Install Docker Compose](https://docs.docker.com/compose/install/)
+
+### 3. Rust
+
+**Install Rust:**
+This project is written in Rust. You need to have Rust installed along with the Cargo package manager. You can install Rust by following the official Rust installation guide:
+
+-- [Install Rust](https://www.rust-lang.org/learn/get-started)
+
 ## HOW TO
 
 Use the terminal to run the following commands:
