@@ -5,5 +5,20 @@ edition = "2021"
 authors = ["Ahmed Eletreby"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[workspace]
+members = [".", "entity", "migration"]
 
 [dependencies]
+anyhow = "1.0.75"
+axum = "0.6.20"
+axum-macros = "0.3.8"
+entity = { path = "entity" }
+migration = { path = "migration"}
+nanoid = "0.4.0"
+opentelemetry = { version = "0.20", features = ["trace", "rt-tokio"] }
+rand = "0.8.5"
+sea-orm = {version="0.12.3",features = ["mock"]}
+serde = { version ="1.0.188", features = ["derive"]}
+tokio = { version ="1.32.0", features = ["full"]}
+tracing = "0.1.37"
+url = "2.4.1"
