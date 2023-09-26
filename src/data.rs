@@ -80,9 +80,9 @@ pub async fn increment_visits_count(db: &DatabaseConnection, id: &str) -> Result
     match entity::stats::Entity::find()
         .filter(entity::stats::Column::Id.eq(id))
         .one(db)
-        .await?
+        .await
     {
-        Some(entry) => {
+        Ok(Some(entry)) => {
             // get the old visits count
             let count = entry.visits_count;
             // create active model from stats entry model
@@ -92,6 +92,216 @@ pub async fn increment_visits_count(db: &DatabaseConnection, id: &str) -> Result
             let _ = active_model_entry.update(db).await;
             Ok(())
         }
-        None => bail!("Failed to find entry for id '{id}' in stats table to increase visits_count"),
+        Ok(None) => {
+            bail!("Failed to find entry for id '{id}' in stats table to increase visits_count")
+        }
+        Err(err) => bail!("Failed to find entry in status table due to: {err}"),
+    }
+}
+#[cfg(test)]
+mod tests {
+    use sea_orm::{entity::prelude::*, DatabaseBackend, MockDatabase, MockExecResult, Transaction};
+
+    use crate::{
+        data::{find_url, increment_visits_count, insert_stats_entry, insert_urls_entry},
+        model::URLDBEntry,
+    };
+
+    use super::find_id;
+
+    #[tokio::test]
+    async fn test_find_id() -> Result<(), DbErr> {
+        // Create MockDatabase with mock query results
+        let db = MockDatabase::new(DatabaseBackend::Postgres)
+            .append_query_results(vec![
+                // First query result
+                vec![entity::urls::Model {
+                    id: "x10N".to_string(),
+                    url: "www.google.com".to_string(),
+                }],
+                // Second query result
+                vec![],
+            ])
+            .into_connection();
+        assert_eq!(
+            find_id(&db, &"www.google.com").await,
+            Some("x10N".to_string())
+        );
+        assert_eq!(find_id(&db, &"www.yahoo.com").await, None);
+
+        Ok(())
+    }
+    #[tokio::test]
+    async fn test_find_id_db_timeout_err() -> Result<(), DbErr> {
+        // Create MockDatabase with mock query results
+        let db = MockDatabase::new(DatabaseBackend::Postgres)
+            .append_query_errors([DbErr::ConnectionAcquire(ConnAcquireErr::Timeout)])
+            .into_connection();
+        assert_eq!(find_id(&db, &"www.google.com").await, None);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_find_url() -> Result<(), DbErr> {
+        // Create MockDatabase with mock query results
+        let db = MockDatabase::new(DatabaseBackend::Postgres)
+            .append_query_results(vec![
+                // First query result
+                vec![entity::urls::Model {
+                    id: "x10N".to_string(),
+                    url: "www.google.com".to_string(),
+                }],
+                // Second query result
+                vec![],
+            ])
+            .into_connection();
+        assert_eq!(
+            find_url(&db, &"x10N").await,
+            Some("www.google.com".to_string())
+        );
+        assert_eq!(find_url(&db, &"ru6UN1").await, None);
+
+        Ok(())
+    }
+    #[tokio::test]
+    async fn test_find_url_db_connection_err() -> Result<(), DbErr> {
+        // Create MockDatabase with mock query results
+        let db = MockDatabase::new(DatabaseBackend::Postgres)
+            .append_query_errors([DbErr::ConnectionAcquire(ConnAcquireErr::ConnectionClosed)])
+            .into_connection();
+        assert_eq!(find_url(&db, &"ru6UN1").await, None);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_insert_urls_entry() -> Result<(), DbErr> {
+        // Create MockDatabase with mock query results
+        let db = MockDatabase::new(DatabaseBackend::Postgres)
+            .append_exec_results([MockExecResult {
+                last_insert_id: 1,
+                rows_affected: 1,
+            }])
+            .into_connection();
+        let urls_entry = URLDBEntry {
+            id: "x10N".to_string(),
+            long_url: "www.google.com".to_string(),
+        };
+        let result = insert_urls_entry(&db, urls_entry).await;
+        assert!(result.is_ok());
+        assert_eq!(
+            db.into_transaction_log(),
+            [Transaction::from_sql_and_values(
+                DatabaseBackend::Postgres,
+                r#"INSERT INTO "urls" ("id", "url") VALUES ($1, $2) RETURNING "id""#,
+                ["x10N".into(), "www.google.com".into()]
+            )]
+        );
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_insert_urls_entry_connection_err() -> Result<(), DbErr> {
+        // Create MockDatabase with mock query results
+        let db = MockDatabase::new(DatabaseBackend::Postgres)
+            .append_exec_errors([DbErr::ConnectionAcquire(ConnAcquireErr::ConnectionClosed)])
+            .into_connection();
+        let urls_entry = URLDBEntry {
+            id: "x10N".to_string(),
+            long_url: "www.google.com".to_string(),
+        };
+        let result = insert_urls_entry(&db, urls_entry).await;
+        assert!(result.is_err());
+        if let Err(err) = result {
+            assert_eq!(err.to_string(),"Failed to insert urls entry due to: Failed to acquire connection from pool: Connection closed".to_string());
+        }
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_insert_stats_entry() -> Result<(), DbErr> {
+        // Create MockDatabase with mock query results
+        let db = MockDatabase::new(DatabaseBackend::Postgres)
+            .append_exec_results([MockExecResult {
+                last_insert_id: 1,
+                rows_affected: 1,
+            }])
+            .into_connection();
+        let stats_entry = URLDBEntry {
+            id: "x10N".to_string(),
+            long_url: "www.google.com".to_string(),
+        };
+        let result = insert_stats_entry(&db, stats_entry).await;
+        assert!(result.is_ok());
+        assert_eq!(
+            db.into_transaction_log(),
+            [Transaction::from_sql_and_values(
+                DatabaseBackend::Postgres,
+                r#"INSERT INTO "stats" ("id") VALUES ($1) RETURNING "id""#,
+                ["x10N".into()]
+            )]
+        );
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_insert_stats_entry_timeout_err() -> Result<(), DbErr> {
+        // Create MockDatabase with mock query results
+        let db = MockDatabase::new(DatabaseBackend::Postgres)
+            .append_exec_errors([DbErr::ConnectionAcquire(ConnAcquireErr::Timeout)])
+            .into_connection();
+        let stats_entry = URLDBEntry {
+            id: "x10N".to_string(),
+            long_url: "www.google.com".to_string(),
+        };
+        let result = insert_stats_entry(&db, stats_entry).await;
+        assert!(result.is_err());
+        if let Err(err) = result {
+            assert_eq!(err.to_string(),"Failed to insert stats entry due to: Failed to acquire connection from pool: Connection pool timed out".to_string());
+        };
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_increment_visits_count() -> Result<(), DbErr> {
+        let db = MockDatabase::new(DatabaseBackend::Postgres)
+            .append_query_results(vec![vec![entity::stats::Model {
+                id: "x10N".to_string(),
+                visits_count: 0,
+            }]])
+            .into_connection();
+        assert!(increment_visits_count(&db, "x10N").await.is_ok());
+
+        assert_eq!(
+            db.into_transaction_log(),
+            [
+                Transaction::from_sql_and_values(
+                    DatabaseBackend::Postgres,
+                    r#"SELECT "stats"."id", "stats"."visits_count" FROM "stats" WHERE "stats"."id" = $1 LIMIT $2"#,
+                    ["x10N".into(), (1 as u64).into()]
+                ),
+                Transaction::from_sql_and_values(
+                    DatabaseBackend::Postgres,
+                    r#"UPDATE "stats" SET "visits_count" = $1 WHERE "stats"."id" = $2 RETURNING "id", "visits_count""#,
+                    [1.into(), "x10N".into()]
+                )
+            ]
+        );
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_increment_visits_count_timeout_err() -> Result<(), DbErr> {
+        // Create MockDatabase with mock query results
+        let db = MockDatabase::new(DatabaseBackend::Postgres)
+            .append_query_errors([DbErr::ConnectionAcquire(ConnAcquireErr::Timeout)])
+            .into_connection();
+
+        let result = increment_visits_count(&db, "x10N").await;
+        assert!(result.is_err());
+        if let Err(err) = result {
+            assert_eq!(err.to_string(),"Failed to find entry in status table due to: Failed to acquire connection from pool: Connection pool timed out".to_string());
+        };
+        Ok(())
     }
 }
