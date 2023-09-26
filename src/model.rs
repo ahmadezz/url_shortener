@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, FromRef)]
 pub struct AppState {
     // db connection layer
-    pub db: DatabaseConnection,
+    pub db: std::sync::Arc<DatabaseConnection>,
     // app config layer
     pub base_url: String,
 }

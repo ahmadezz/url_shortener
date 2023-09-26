@@ -47,10 +47,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // get connection to specified postgres database
     let db_url =
         env::var("DATABASE_URL").expect("DATABASE_URL is not set in environment variables");
-    let db_conn = Database::connect(db_url).await?;
+    let db_conn = std::sync::Arc::new(Database::connect(db_url).await?);
 
     // apply all pending migrations on app start
-    if Migrator::up(&db_conn, None).await.is_err() {
+    if Migrator::up(&*db_conn, None).await.is_err() {
         panic!("Failed to apply migrations")
     };
 
